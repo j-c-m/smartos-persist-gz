@@ -2,10 +2,12 @@
  
 # Originally based on http://wiki.smartos.org/display/DOC/Allowing+user+CRUD+in+the+global+zone
 # Author: hugo@freenode
- 
+
+tcp_buf=16777216
+udp_buf=16777216
 enable_stmf=1
-enable_smb=1
-enable_nfs=1
+enable_smb=0
+enable_nfs=0
 save_us=( /etc/passwd /etc/shadow /etc/group /etc/ouser_attr /etc/user_attr \
           /etc/security/policy.conf /etc/security/auth_attr /etc/security/exec_attr \
           /etc/security/prof_attr /etc/pam.conf /var/smb/smbpasswd /var/smb/osmbpasswd /var/smb/smbgroup.db )
@@ -21,6 +23,9 @@ fi
 case "$1" in
     'start')
     if [[ -n $(/bin/bootparams | grep '^smartos=true') ]]; then
+        ipadm set-prop max_buf=$tcp_buf tcp
+        ipadm set-prop send_buf=$tcp_buf tcp
+        ipadm set-prop recv_buf=$tcp_buf tcp
         # file magic
         for file in ${save_us[*]}
         do
