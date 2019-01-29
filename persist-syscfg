@@ -24,12 +24,12 @@ fi
 case "$1" in
     'start')
     if [[ -n $(/bin/bootparams | grep '^smartos=true') ]]; then
-        ipadm set-prop max_buf=$tcp_buf tcp
-        ipadm set-prop send_buf=$tcp_buf tcp
-        ipadm set-prop recv_buf=$tcp_buf tcp
-        ipadm set-prop max_buf=$udp_buf udp
-        ipadm set-prop send_buf=$udp_buf udp
-        ipadm set-prop recv_buf=$udp_buf udp
+        ipadm set-prop -p max_buf=$tcp_buf tcp
+        ipadm set-prop -p send_buf=$tcp_buf tcp
+        ipadm set-prop -p recv_buf=$tcp_buf tcp
+        ipadm set-prop -p max_buf=$udp_buf udp
+        ipadm set-prop -p send_buf=$udp_buf udp
+        ipadm set-prop -p recv_buf=$udp_buf udp
         # file magic
         for file in ${save_us[*]}
         do
