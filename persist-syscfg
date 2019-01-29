@@ -3,8 +3,8 @@
 # Originally based on http://wiki.smartos.org/display/DOC/Allowing+user+CRUD+in+the+global+zone
 # Author: hugo@freenode
 
-tcp_buf=16777216
-udp_buf=16777216
+#tcp_buf=16777216
+#udp_buf=16777216
 enable_stmf=0
 enable_smb=1
 enable_nfs=0
@@ -12,7 +12,7 @@ enable_nfs=0
 save_us=( /etc/passwd /etc/shadow /etc/group /etc/ouser_attr /etc/user_attr \
           /etc/security/policy.conf /etc/security/auth_attr /etc/security/exec_attr \
           /etc/security/prof_attr /etc/pam.conf /var/smb/smbpasswd /var/smb/osmbpasswd \
-          /var/smb/smbgroup.db /etc/smbautohome )
+          /var/smb/smbgroup.db /etc/smbautohome /etc/vfstab )
 
 ukeystor="/usbkey/cn-persist"
 
@@ -25,12 +25,16 @@ fi
 case "$1" in
     'start')
     if [[ -n $(/bin/bootparams | grep '^smartos=true') ]]; then
-        ipadm set-prop -p max_buf=$tcp_buf tcp
-        ipadm set-prop -p send_buf=$tcp_buf tcp
-        ipadm set-prop -p recv_buf=$tcp_buf tcp
-        ipadm set-prop -p max_buf=$udp_buf udp
-        ipadm set-prop -p send_buf=$udp_buf udp
-        ipadm set-prop -p recv_buf=$udp_buf udp
+        if [[ -n ${tcp_buf} ]]; then
+            ipadm set-prop -p max_buf=$tcp_buf tcp
+            ipadm set-prop -p send_buf=$tcp_buf tcp
+            ipadm set-prop -p recv_buf=$tcp_buf tcp
+        fi
+        if [[ -n ${udp_buf} ]]; then
+            ipadm set-prop -p max_buf=$udp_buf udp
+            ipadm set-prop -p send_buf=$udp_buf udp
+            ipadm set-prop -p recv_buf=$udp_buf udp
+        fi
         # file magic
         for file in ${save_us[*]}
         do
@@ -62,6 +66,9 @@ case "$1" in
         [ -e /tmp/stmf.lock ] && svccfg export -a stmf > ${ukeystor}/svc/stmf.prop
         [ -e ${ukeystor}/svc/stmf.prop ] && svccfg import ${ukeystor}/svc/stmf.prop
         touch /tmp/stmf.lock
+
+        # mount lofs
+        mount -F lofs -a
 
         # enable services
         if [ ${enable_stmf} -gt 0 ]; then
