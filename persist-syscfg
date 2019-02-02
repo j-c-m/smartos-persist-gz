@@ -22,19 +22,6 @@ if [ ! -f /usr/bin/rsync ]; then
     exit 1
 fi
 
-case "$1" in
-    'restart')
-        stop()
-        start()
-    ;;
-    'start')
-        start()
-    ;;
-    'stop')
-        stop()
-    ;;
-esac
-
 start() {
     if [[ -n $(/bin/bootparams | grep '^smartos=true') ]]; then
         [[ -n ${tcp_max_buf} ]] && ipadm set-prop -p max_buf=${tcp_max_buf} tcp
@@ -89,5 +76,17 @@ stop() {
             echo "sys->stor: $file"
         fi
     done
-
 }
+
+case "$1" in
+    'restart')
+        stop
+        start
+    ;;
+    'start')
+        start
+    ;;
+    'stop')
+        stop
+    ;;
+esac
