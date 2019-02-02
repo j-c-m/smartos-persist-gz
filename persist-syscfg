@@ -79,10 +79,6 @@ stop() {
 }
 
 case "$1" in
-    'restart')
-        stop
-        start
-    ;;
     'start')
         start
     ;;
