@@ -9,9 +9,9 @@ udp_max_buf=16777216
 enable_smb=1
 #enable_nfs=1
 
-save_us=( /etc/passwd /etc/shadow /etc/group /etc/ouser_attr /etc/user_attr \
+save_us=( /etc/passwd /etc/shadow /etc/group /etc/user_attr \
           /etc/security/policy.conf /etc/security/auth_attr /etc/security/exec_attr \
-          /etc/security/prof_attr /etc/pam.conf /var/smb/smbpasswd /var/smb/osmbpasswd \
+          /etc/security/prof_attr /etc/pam.conf /var/smb/smbpasswd \
           /var/smb/smbgroup.db /etc/smbautohome /etc/vfstab )
 
 ukeystor="/usbkey/cn-persist"
@@ -27,23 +27,13 @@ case "$1" in
     if [[ -n $(/bin/bootparams | grep '^smartos=true') ]]; then
         [[ -n ${tcp_max_buf} ]] && ipadm set-prop -p max_buf=${tcp_max_buf} tcp
         [[ -n ${udp_max_buf} ]] && ipadm set-prop -p max_buf=${udp_max_buf} udp
+
         # file magic
         for file in ${save_us[*]}
         do
             ukf=${ukeystor}${file}
-
-            if [[ -z $(/usr/sbin/mount -p | grep $file) ]]; then
-                if [[ $ukf -ot $file ]]; then
-                    rsync -Rrtpogu $file $ukeystor
-                    echo "sys->stor: $file"
-                else
-                    rsync -rtpog $ukf $file
-                    echo "stor->sys: $file"
-                fi
-
-                touch $file $ukf
-                mount -F lofs $ukf $file
-            fi
+            rsync -rtpog $ukf $file
+            echo "stor->sys: $file"
         done
 
         mkdir -p ${ukeystor}/svc/
@@ -80,8 +70,10 @@ case "$1" in
     'stop')
         for file in ${save_us[*]}
         do
-            if [[ -n $(/usr/sbin/mount -p | grep $file) ]]; then
-                umount $file && touch $file
+            ukf=${ukeystor}${file}
+            if [[ $ukf -ot $file ]]; then
+                rsync -Rrtpogu $file $ukeystor
+                echo "sys->stor: $file"
             fi
         done
     ;;
