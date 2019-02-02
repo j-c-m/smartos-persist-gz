@@ -23,7 +23,19 @@ if [ ! -f /usr/bin/rsync ]; then
 fi
 
 case "$1" in
+    'restart')
+        stop
+        start
+    ;;
     'start')
+        start
+    ;;
+    'stop')
+        stop
+    ;;
+esac
+
+start() {
     if [[ -n $(/bin/bootparams | grep '^smartos=true') ]]; then
         [[ -n ${tcp_max_buf} ]] && ipadm set-prop -p max_buf=${tcp_max_buf} tcp
         [[ -n ${udp_max_buf} ]] && ipadm set-prop -p max_buf=${udp_max_buf} udp
@@ -66,15 +78,16 @@ case "$1" in
             svcadm enable nfs/server
         fi
     fi
-    ;;
-    'stop')
-        for file in ${save_us[*]}
-        do
-            ukf=${ukeystor}${file}
-            if [[ $ukf -ot $file ]]; then
-                rsync -Rrtpogu $file $ukeystor
-                echo "sys->stor: $file"
-            fi
-        done
-    ;;
-esac
+}
+
+stop() {
+    for file in ${save_us[*]}
+    do
+        ukf=${ukeystor}${file}
+        if [[ $ukf -ot $file ]]; then
+            rsync -Rrtpogu $file $ukeystor
+            echo "sys->stor: $file"
+        fi
+    done
+
+}
