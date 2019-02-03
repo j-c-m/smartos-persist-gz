@@ -5,22 +5,23 @@
 
 tcp_max_buf=16777216
 udp_max_buf=16777216
-#enable_stmf=1
-enable_smb=1
-#enable_nfs=1
 
-save_us=( /etc/passwd /etc/shadow /etc/group /etc/user_attr \
+save_files=( /etc/passwd /etc/shadow /etc/group /etc/user_attr \
           /etc/security/policy.conf /etc/security/auth_attr /etc/security/exec_attr \
           /etc/security/prof_attr /etc/pam.conf /var/smb/smbpasswd \
           /var/smb/smbgroup.db /etc/smbautohome /etc/vfstab )
 
-ukeystor="/usbkey/cn-persist"
+#save_svccfg=( nfs/server smb/server stmf )
 
-# this script needs rsync
-if [ ! -f /usr/bin/rsync ]; then
-    echo please install rsync
-    exit 1
-fi
+save_svccfg=( smb/server )
+
+#enable_services=( system/stmf iscsi/target \
+#                  system/idmap smb/client smb/server \
+#                  nfs/server )
+
+enable_services=( system/idmap smb/client smb/server )
+
+ukeystor="/usbkey/cn-persist"
 
 start() {
     if [[ -n $(/bin/bootparams | grep '^smartos=true') ]]; then
@@ -28,53 +29,47 @@ start() {
         [[ -n ${udp_max_buf} ]] && ipadm set-prop -p max_buf=${udp_max_buf} udp
 
         # file magic
-        for file in ${save_us[*]}
+        for file in ${save_files[*]}
         do
             ukf=${ukeystor}${file}
-            rsync -rtpog $ukf $file
+            cp -p $ukf $file
             echo "stor->sys: $file"
         done
 
-        mkdir -p ${ukeystor}/svc/
-        [ -e /tmp/nfssrv.lock ] && svccfg export -a nfs/server > ${ukeystor}/svc/nfssrv.prop
-        [ -e ${ukeystor}/svc/nfssrv.prop ] && svccfg import ${ukeystor}/svc/nfssrv.prop
-        touch /tmp/nfssrv.lock
-
-        [ -e /tmp/smbsrv.lock ] && svccfg export -a smb/server > ${ukeystor}/svc/smbsrv.prop
-        [ -e ${ukeystor}/svc/smbsrv.prop ] && svccfg import ${ukeystor}/svc/smbsrv.prop
-        touch /tmp/smbsrv.lock
-
-        [ -e /tmp/stmf.lock ] && svccfg export -a stmf > ${ukeystor}/svc/stmf.prop
-        [ -e ${ukeystor}/svc/stmf.prop ] && svccfg import ${ukeystor}/svc/stmf.prop
-        touch /tmp/stmf.lock
+        for svcprop in ${save_svccfg[*]}
+        do
+            ukp=${ukeystor}/svc/${svcprop//\//.}.prop
+            [[ -e ${ukp} ]] && svccfg import ${ukp}
+            echo "store->sys: $svcprop"
+        done
 
         # mount lofs
-        mount -F lofs -a
+        mount -F lofs -a &> /dev/null
 
-        # enable services
-        if [[ -n ${enable_stmf} ]]; then
-            svcadm enable system/stmf
-            svcadm enable iscsi/target
-        fi
-        if [[ -n ${enable_smb} ]]; then
-            svcadm enable system/idmap
-            svcadm enable smb/client
-            svcadm enable smb/server
-        fi
-        if [[ -n ${enable_nfs} ]]; then
-            svcadm enable nfs/server
-        fi
+        for service in ${enable_services[*]}
+        do
+            svcadm enable $service
+            echo "enable svc: $service"
+        done
     fi
 }
 
 stop() {
-    for file in ${save_us[*]}
+    for file in ${save_files[*]}
     do
         ukf=${ukeystor}${file}
         if [[ $ukf -ot $file ]]; then
-            rsync -Rrtpogu $file $ukeystor
+            cp -p $file $ukf
             echo "sys->stor: $file"
         fi
+    done
+
+    mkdir -p ${ukeystor}/svc/
+    for svcprop in ${save_svccfg[*]}
+    do
+        ukp=${ukeystor}/svc/${svcprop//\//.}.prop
+        svccfg export -a ${svcprop} > ${ukp}
+        echo "sys->stor: $svcprop"
     done
 }
 
