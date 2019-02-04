@@ -32,8 +32,10 @@ start() {
         for file in ${save_files[*]}
         do
             ukf=${ukeystor}${file}
-            cp -p $ukf $file
-            echo "stor->sys: $file"
+            if ! cmp -s $ukf $file; then
+                cp -p $ukf $file
+                echo "stor->sys: $file"
+            fi
         done
 
         for svcprop in ${save_svccfg[*]}
