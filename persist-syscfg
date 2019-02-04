@@ -32,7 +32,7 @@ start() {
         for file in ${save_files[*]}
         do
             ukf=${ukeystor}${file}
-            if ! cmp -s $ukf $file; then
+            if [[ -e ${ukf} ]] && ! cmp -s $ukf $file; then
                 cp -p $ukf $file
                 echo "stor->sys: $file"
             fi
