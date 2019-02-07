@@ -8,6 +8,8 @@ save_files=( /etc/passwd /etc/shadow /etc/group /etc/user_attr \
           /etc/security/prof_attr /etc/pam.conf /var/smb/smbpasswd \
           /var/smb/smbgroup.db /etc/smbautohome /etc/vfstab )
 
+save_dirs=( /root )
+
 #save_svccfg=( nfs/server smb/server stmf )
 
 save_svccfg=( smb/server )
@@ -19,6 +21,7 @@ save_svccfg=( smb/server )
 enable_services=( system/idmap smb/client smb/server )
 
 ukeystor="/opt/custom/share/persist-gz"
+[[ ! -d $ukeystor ]] && mkdir -p $ukeystor
 
 start() {
     if [[ -n $(/bin/bootparams | grep '^smartos=true') ]]; then
@@ -30,7 +33,16 @@ start() {
             ukf=${ukeystor}${file}
             if [[ -e ${ukf} ]] && ! cmp -s $ukf $file; then
                 cp -p $ukf $file
-                echo "stor->sys: $file"
+                echo "stor->sys file: $file"
+            fi
+        done
+
+        for dir in ${save_dirs[*]}
+        do
+            ukd=${ukeystor}${dir}/
+            if [[ -d $ukd ]]; then
+                rsync -ax $ukd $dir
+                echo "stor->sys  dir: $dir"
             fi
         done
 
@@ -41,7 +53,7 @@ start() {
             svccfg export -a ${svcprop} > ${tmp}
             if [[ -e ${ukp} ]] && ! cmp -s ${tmp} ${ukp}; then
                 svccfg import ${ukp}
-                echo "store->sys: $svcprop"
+                echo "stor->sys prop: $svcprop"
             fi
             rm ${tmp}
         done
@@ -63,9 +75,15 @@ stop() {
     do
         ukf=${ukeystor}${file}
         if [[ $ukf -ot $file ]]; then
-            cp -p $file $ukf
-            echo "sys->stor: $file"
+            rsync -Rax $file ${ukeystor}
+            echo "sys->stor file: $file"
         fi
+    done
+
+    for dir in ${save_dirs[*]}
+    do
+        rsync -ax $dir ${ukeystor}
+        echo "sys->stor  dir: $dir"
     done
 
     mkdir -p ${ukeystor}/svc/
@@ -76,7 +94,7 @@ stop() {
         svccfg export -a ${svcprop} > ${tmp}
         if ! cmp -s ${tmp} ${ukp}; then
             cp ${tmp} ${ukp}
-            echo "sys->stor: $svcprop"
+            echo "sys->stor prop: $svcprop"
         fi
         rm ${tmp}
     done
