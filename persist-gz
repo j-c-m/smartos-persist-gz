@@ -1,8 +1,5 @@
 #!/usr/bin/bash
 
-# Originally based on http://wiki.smartos.org/display/DOC/Allowing+user+CRUD+in+the+global+zone
-# Author: hugo@freenode
-
 tcp_max_buf=16777216
 udp_max_buf=16777216
 
@@ -21,7 +18,7 @@ save_svccfg=( smb/server )
 
 enable_services=( system/idmap smb/client smb/server )
 
-ukeystor="/usbkey/cn-persist"
+ukeystor="/opt/custom/share/persist-gz"
 
 start() {
     if [[ -n $(/bin/bootparams | grep '^smartos=true') ]]; then
