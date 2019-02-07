@@ -7,6 +7,15 @@
     <dependency name='filesystem' grouping='require_all' restart_on='error' type='service'>
       <service_fmri value='svc:/system/filesystem/local'/>
     </dependency>
+    <dependency name='smb-server' grouping='optional_all' restart_on='none' type='service'>
+      <service_fmri value='svc:/network/smb/server' />
+    </dependency>
+    <dependency name='nfs-server' grouping='optional_all' restart_on='none' type='service'>
+      <service_fmri value='svc:/network/nfs/server' />
+    </dependency>
+    <dependency name='iscsi-target' grouping='optional_all' restart_on='none' type='service'>
+      <service_fmri value='svc:/network/iscsi/target' />
+    </dependency>
     <dependent name='nsc' grouping='require_all' restart_on='refresh'>
       <service_fmri value='svc:/system/name-service-cache' />
     </dependent>
