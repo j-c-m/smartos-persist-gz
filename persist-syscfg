@@ -69,9 +69,14 @@ stop() {
     mkdir -p ${ukeystor}/svc/
     for svcprop in ${save_svccfg[*]}
     do
+        tmp=$(mktemp)
         ukp=${ukeystor}/svc/${svcprop//\//.}.prop
-        svccfg export -a ${svcprop} > ${ukp}
-        echo "sys->stor: $svcprop"
+        svccfg export -a ${svcprop} > ${tmp}
+        if ! cmp -s ${tmp} ${ukp}; then
+            cp ${tmp} ${ukp}
+            echo "sys->stor: $svcprop"
+        fi
+        rm ${tmp}
     done
 }
 
