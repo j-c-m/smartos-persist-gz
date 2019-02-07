@@ -28,7 +28,6 @@ start() {
         [[ -n ${tcp_max_buf} ]] && ipadm set-prop -p max_buf=${tcp_max_buf} tcp
         [[ -n ${udp_max_buf} ]] && ipadm set-prop -p max_buf=${udp_max_buf} udp
 
-        # file magic
         for file in ${save_files[*]}
         do
             ukf=${ukeystor}${file}
@@ -40,18 +39,24 @@ start() {
 
         for svcprop in ${save_svccfg[*]}
         do
+            tmp=$(mktemp)
             ukp=${ukeystor}/svc/${svcprop//\//.}.prop
-            [[ -e ${ukp} ]] && svccfg import ${ukp}
-            echo "store->sys: $svcprop"
+            svccfg export -a ${svcprop} > ${tmp}
+            if [[ -e ${ukp} ]] && ! cmp -s ${tmp} ${ukp}; then
+                svccfg import ${ukp}
+                echo "store->sys: $svcprop"
+            fi
+            rm ${tmp}
         done
 
-        # mount lofs
         mount -F lofs -a &> /dev/null
 
         for service in ${enable_services[*]}
         do
-            svcadm enable $service
-            echo "enable svc: $service"
+            if [[ $(svcs -H $service) =~ ^disabled ]]; then
+                svcadm enable $service
+                echo "enable svc: $service"
+            fi
         done
     fi
 }
